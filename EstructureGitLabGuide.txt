@@ -1,0 +1,45 @@
+Pipeline GitLab - Estructure
+
+Basic Estructure
+
+	 - Etapas
+	 - Jobs
+
+# Pipeline Config
+	
+	-Runner (context kubernetes)
+	 Despliegue basado en pull (pull-based deployment) //aplica cambios a un cluster mediante un agentekuberntes
+		* AgentKubernetes
+			1.- Crear AgentKubernetes
+			2.- Asociar agente con cluster mediante un token
+			3.- Crear Pipeline CI/CD
+			4.- Hacer push al repositorio gitlab con codigo fuente y esperar la ejecución del despliegue
+			5.- El agentkubernetes detectara los cambios y los aplicara en el cluster segun la configuracion del arhivo config.yaml
+	 Despliegue basado en push (push-based deployment) //Aplica cambios al cluster directamente desde el pipeline conectandose al cluster
+	  
+	- Rules
+	- Cache
+	- Artifacts
+	- Default
+	- Needs  //Especifica que un jobs debe a esperar la finalizacion de otro
+	- Script //Especifica scripts a ejecutar en un job
+	- Image	 //Espeifica imagen base docker usada por un job
+	- environment //Define el entorno de ejecución
+	(Como se hacen estas configuraciones)
+		- Config
+		- VarENV
+	- only //Especifica en que rama se esta ejecutando
+	- variables ($NOMBRE_VARIABLE) // usted puede definir variables segun y asociarla a un environment en(CI/CD - Variables de entorno "Expand")
+								   //O puede definir las variables en el pipeline con la palabra "variables - NOMBRE_VARIABLE: "VALORVARIABLE"" 
+	
+# Trigger
+
+# Pipeline Graphs
+
+# API de Pipelines
+
+Types Pipeline
+
+	- Pipelines Multi-proyect
+	- Pipelines de Arquitectura Directed Acyclic Graph (DAG)
+	- Pipelines Parent-Child

@@ -1,0 +1,71 @@
+Tuberia Basica - CI/CD - GITLAB
+
+1- Crear cuenta en gitlab
+2- Crear repositorio
+	 .- (+) esquina izquierda / Selecionar (crear proyecto/repositorio)
+	 .- Rellenar campos, validar si la aplicacion se va a desplegar en un entorno especifico: Destino de implementación del proyecto (opcional)
+	 .- (Crear)
+
+3- Crear/Configurar Runner (en container PODMAN)
+	*CREAR
+		.- Entrar en proyecto, configuraciones, Runners
+		.- (Create new runner)
+		.- Configurarlo segun sus necesidades
+		.- Extraer datos importantes del runner como la URL y el TOKEN
+	
+	*CONFIGURAR EN MAQUINA
+		.- sudo dnf -y install podman
+		curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh" | sudo bash
+		sudo dnf -y install gitlab-runner
+		
+		.- sudo loginctl enable-linger gitlab-runner
+		.- sudo gitlab-runner start gitlab-runner status
+		.- sudo gitlab-runner register  --url https://gitlab.com  --token glrt-KCjV6bwpZyhLs627-3KR
+		.- Como utilizamos podman, introduzca "custom" , y un nombre para el runner
+		
+		.- mkdir artefacts mkdir -p /home/root/gitlab-runner-logs
+		.- Edite archivo en la ruta nano /etc/gitlab-runner/config.toml
+		
+concurrent =  1
+check_interval =  0
+shutdown_timeout =  0
+
+[session_server]
+  session_timeout =  1800
+
+[[runners]]
+  name = "runnertesting"
+  url = "https://gitlab.com"
+  id =  32676657
+  token = "glrt-KCjV6bwpZyhLs627-3KR"
+  token_obtained_at =  2024-02-15T12:56:44Z
+  token_expires_at =  0001-01-01T00:00:00Z
+  executor = "shell" # Cambiado a 'shell'
+  environment = ["FF_NETWORK_PER_BUILD=1"]
+  log_file = "/home/root/gitlab-runner-logs/gitlab-runner.log" # Añadido log_file
+  [runners.cache]
+    Type = "local"
+    Path = "/root/artefacts"
+    Shared = false
+
+
+		.- Ejecute : $ sudo gitlab-runner restart
+		.- Verificar si runner esta corriendo: gitlab-runner status
+		
+
+4.- Tuberia
+
+#Crear Tuberia en gitlab
+stages:
+  - build
+
+print_message:
+  stage: build
+  tags:
+    - tags
+  script:
+    - echo "Proceso terminado"
+		
+		
+
+

@@ -1,0 +1,43 @@
+image: maven:latest
+
+variables:
+  AWS_REGION: "your-aws-region" # Reemplaza con tu región de AWS
+  ECR_REPOSITORY: "your-ecr-repository" # Reemplaza con tu repositorio ECR
+  KUBECONFIG_FILE: "/root/.kube/config"
+
+before_script:
+  - apk add --no-cache curl jq python py-pip
+  - pip install awscli
+  - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+  - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+  - aws eks update-kubeconfig --region $AWS_REGION --name your-eks-cluster # Reemplaza con el nombre de tu clúster EKS
+
+stages:
+  - build
+  - package
+  - deploy
+
+build:
+  stage: build
+  script:
+    - mvn compile
+
+package:
+  stage: package
+  script:
+    - mvn package
+    - docker build -t my-java-app .
+    - docker tag my-java-app $ECR_REPOSITORY:$CI_COMMIT_SHA
+
+deploy:
+  stage: deploy
+  script:
+    - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
+    - docker push $ECR_REPOSITORY:$CI_COMMIT_SHA
+    - kubectl apply -f deployment.yaml
+  environment:
+    name: production
+  only:
+    - master
+
+		

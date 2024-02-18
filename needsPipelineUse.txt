@@ -1,0 +1,18 @@
+stages:
+  - compile
+  - test
+  - deploy
+
+compile_job:
+  stage: compile
+  script: echo "Compiling the code"
+
+test_job:
+  stage: test
+  script: echo "Running tests"
+  needs: ["compile_job"]
+
+deploy_job:
+  stage: deploy
+  script: echo "Deploying the app"
+  needs: ["test_job"]
