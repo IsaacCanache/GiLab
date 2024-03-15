@@ -1,0 +1,62 @@
+Marget Request - Pipeline
+
+
+1.- Confirmar permisos
+
+//Valida que el el usuario o el grupo tenga los permisos necesarios para hacer invocaciones o solicitudes de margetrequest
+
+2.- Crear variables
+
+//Aqui las variables tienen dos propositos, ayudar a hacer referencia a un valor rapidamente, asegurar el valor mediante la protección de variables
+
+    - Crear variables:  CI_JOB_TOKEN / $CI_PROJECT_ID
+    
+3.- Generar TOKEN
+
+//Se necesita un TOKEN con la finalidad de confirmar la identidad al momento de invocar la API para la solicitud del merge_requests
+
+4.- Creaer archivo pipeline
+
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  tags:
+    - tags
+  script:
+    - echo "Proceso de construcción terminado"
+
+test:
+  stage: test
+  tags:
+    - tags
+  script:
+    - echo "Ejecutando pruebas..."
+    # Aquí debes incluir los comandos para ejecutar tus pruebas
+
+deploy:
+  stage: deploy
+  tags:
+    - tags #Especifica que todos los jobs se ejecuten en el mismo runner
+  script:
+    - echo "Desplegando..."
+    # Aquí puedes agregar el comando para crear una Merge Request
+    # usando la API de GitLab. Asegúrate de tener las variables de entorno
+    # necesarias configuradas para autenticarte con la API.
+    - >
+      curl --request POST --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" \
+      --data "source_branch=feature_branch&target_branch=master&title=Merge Request automatizado" \
+      "https://gitlab.example.com/api/v4/projects/$CI_PROJECT_ID/merge_requests"
+
+
+      
+      URL NO VALIDA, PROBAR: 
+      https://gitlab.com/api/v4/projects/ci-cd4014707%2Fpipeline-testing/merge_requests
+      https://gitlab.com/api/v4/projects/ci-cd4014707/pipeline-testing/merge_requests
+      https://gitlab.com/api/v4/projects/54942256/merge_requests
+
+ 

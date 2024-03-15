@@ -1,0 +1,65 @@
+Send parameter with trigger - Proyect A/B
+
+1.- En CI/CD Setting, en Trigger Pipeline, cree un Trigger
+2.- Copie el token y un ejemplo segun amerite el uso 
+
+Token trigger proyect proyect A : glptt-15f78fcc29b6e3659d129c5db238907eb9b1c449
+
+(PROYECT - B)
+
+trigger_pipeline_b:
+ stage: trigger
+ script:
+		- curl -X POST --fail -F token=glptt-15f78fcc29b6e3659d129c5db238907eb9b1c449 -F ref=main -F "variables[MESSAGE]=Hello from Pipeline A" https://gitlab.com/api/v4/projects/54942256/trigger/pipeline
+	  
+
+(PROYECT - A)
+
+stages:
+ - build
+ - test
+ - deploy
+ 
+variables:
+  MESSAGE: "default message"
+  
+build_job:
+ stage: build
+ script:
+    - echo "Building..."
+
+test_job:
+ stage: test
+ script:
+    - echo "Testing..."
+
+deploy_job:
+ stage: deploy
+ script:
+ 
+	- echo $MESSAGE
+
+	
+------------------------
+------------------------
+stages:
+ - build
+ - test
+
+variables:
+ EXECUTE_TESTS: "true"
+
+build_job:
+ stage: build
+ script:
+    - echo "Building..."
+
+test_job:
+ stage: test
+ script:
+    - echo "Testing..."
+ rules:
+    - if: '$EXECUTE_TESTS == "true"'
+      when: always
+    - when: never
+

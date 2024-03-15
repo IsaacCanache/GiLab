@@ -1,26 +1,44 @@
 Pipeline GitLab - Estructure
 
-Basic Estructure
-
+#Basic Estructure
+  //CI-CD
 	 - Etapas
 	 - Jobs
+	 - Runner (context kubernetes)
+     https://docs.gitlab.com/runner/fleet_scaling/ //scalamiento de Runners
+		 
+		 - Despliegue basado en pull (pull-based deployment) //aplica cambios a un cluster mediante un agentekuberntes
+			* AgentKubernetes
+				1.- Crear AgentKubernetes
+				2.- Asociar agente con cluster mediante un token
+				3.- Crear Pipeline CI/CD
+				4.- Hacer push al repositorio gitlab con codigo fuente y esperar la ejecución del despliegue
+				5.- El agentkubernetes detectara los cambios y los aplicara en el cluster segun la configuracion del arhivo config.yaml
+		 - Despliegue basado en push (push-based deployment) //Aplica cambios al cluster directamente desde el pipeline conectandose al cluster
+	
+  //Administración 
+    - Usuarios //Personal con roles de acceso y manipulación
+    - Grupos // Contiene subgrupos, contiene proyectos, usuarios y grupo de usuarios
+    - Namespaces //Contiene grupos siendo la base de la ruta hacia donde se quiera dirigir el acceso
+    - Service Account //Cuentas machine que permite la interacción como una cuenta normal mediante llamadas API con un token de acceso
+                        el token cuenta con alcances (scopes)
+                      //La cuenta de servicio se crea con un token de acceso y se adjunta a un grupo o proyecto, a partir de este punto
+                      se pueden hacer llamadas a la API de GitLab
+                      
 
 # Pipeline Config
 	
-	-Runner (context kubernetes)
-	 Despliegue basado en pull (pull-based deployment) //aplica cambios a un cluster mediante un agentekuberntes
-		* AgentKubernetes
-			1.- Crear AgentKubernetes
-			2.- Asociar agente con cluster mediante un token
-			3.- Crear Pipeline CI/CD
-			4.- Hacer push al repositorio gitlab con codigo fuente y esperar la ejecución del despliegue
-			5.- El agentkubernetes detectara los cambios y los aplicara en el cluster segun la configuracion del arhivo config.yaml
-	 Despliegue basado en push (push-based deployment) //Aplica cambios al cluster directamente desde el pipeline conectandose al cluster
-	  
-	- Rules
-	- Cache
-	- Artifacts
-	- Default
+	- strategy
+	- project
+	- except //especifica bajo que condiciones no se puede ejecutar un jobs
+	- workflow  //especifica un flujo de trabajo
+	- services //habilita contenedores docker con la sintaxis - postgres:lastest
+	- before_script  //escript que se completan antes de la ejecución de los jobs
+	- changes //conciones dentro de la seccion rules
+	- Rules //condiciones de ejecución para los jobs
+	- Cache //define rutas de almacenamiento para guardar informacion entre ejecución y no cargar cosas como dependencias de nuevo
+	- Artifacts  //almacena artefactos en una ruta con el fin usualmente de que otro job lo consuma
+	- Default  //define las configuraciones predeterminadas del pipeline
 	- Needs  //Especifica que un jobs debe a esperar la finalizacion de otro
 	- Script //Especifica scripts a ejecutar en un job
 	- Image	 //Espeifica imagen base docker usada por un job
@@ -33,13 +51,119 @@ Basic Estructure
 								   //O puede definir las variables en el pipeline con la palabra "variables - NOMBRE_VARIABLE: "VALORVARIABLE"" 
 	
 # Trigger
+	
+	- Autenticación: TokenGenerate
+	- TypesCalls : API/"CI/CD"/WEBHOOKS
+	- Configuración //se pueden especificar configuraciones que definan cuando se ejecutan los jobs 
+	Ejemplo:  El proyecto A registra un evento generando un token, luego el proyecto B llama a ese evento activandolo, de esta forma:
+	
+		trigger_pipeline:
+		  stage: deploy
+		  script:
+			- 'curl --fail --request POST --form token=$MY_TRIGGER_TOKEN --form ref=main "https://gitlab.example.com/api/v4/projects/123456/trigger/pipeline"'
+		  rules:
+			- if: $CI_COMMIT_TAG
+		  environment: production
+	
+	- Activacion de pipelines hijos: 
+	
+		trigger:
+		include:
+		  - local: child_pipeline.yml
 
+
+# Types Pipeline
+
+	- Pipelines Multi-proyect //activacion de pipelines en proyectos distintos
+	- Pipelines de Arquitectura Directed Acyclic Graph (DAG)  // usar cuando en proyecto tenga muchas dependencias
+	- Pipelines Parent-Child //un pipeline padre puede desencadenar a un pipeline hijo, como forma de modular la configuracion del flujo
+	
 # Pipeline Graphs
 
 # API de Pipelines
 
-Types Pipeline
+#Secciones de la interfaz de GitLab:
 
-	- Pipelines Multi-proyect
-	- Pipelines de Arquitectura Directed Acyclic Graph (DAG)
-	- Pipelines Parent-Child
+General //especifca las caracteristicas del proyecto como (nombre, URL, Accesos, plantillas, visibilidad etc)
+Integrations //Habilita un conjunto integraciones por ejemplo con (Prometheus, Sack, Jira), Un pipeline se activa mediante un evento para posteriormente desplegar funciones relacionadas a la herrramienta
+Ejemplo: Integracion con Jira, mediante un push un desarrollador en el commit puede incluir un ID de una tarea el cual el pipeline detecta y en esa tarea hace una modificacion
+
+	create_jira_comment:
+	  script:
+		- 'curl --request POST --url "https://your-jira-instance.atlassian.net/rest/api/2/issue/JIRA-123/comment" --user "email@example.com:API_TOKEN" --header "Accept: application/json" --header "Content-Type: application/json" --data "{\"body\": \"New commit in GitLab: $CI_COMMIT_MESSAGE. [View Commit]($CI_COMMIT_URL)\"}"'
+	  only:
+		- branches
+	  except:
+		- master
+//por parte de JIRA hace falta conceder permisos y una permisologia basada em tokens
+
+Webhooks //Se utiliza para enviar notificaciones o eventos a servicios externos, se define un token para asegurar la conexion
+Access Tokens  //crear token, define vencimiento, acceso, scopes, permisos etc
+Repository // Configuración de los repositorios (URL de exposicion/ permisos de grupos/ Log de archivos/ almacenamiento predeterminado/ cambio de ubicación)
+Merge request // Especifica plantillas MRs, unión de las ramas, automatización de MRs mediante 
+			  // La funcionalidad (Cuando el pipeline esta sucessfully) es una funcionalidad donde se aprueba un MRs una vez se haya
+			  ejecutado el pipeline exitosamente
+			  
+			  Ejemplo: El desarrollador hace push o commit, se ejecuta el pipeline que pasa por un proceso de compilado, prueba, test y sintaxis
+			  todo eso se ejecuta perfecto entonces el pipeline se estaría ejecutando correctamente, en ese momento se hace el MRs
+CI/CD //aspectos esenciales del CI/CD, archivo ci/cd, Token, variables, artecfactos, DevOps Auto, Runners etc
+	  // En (General) especifica la estrategia del pipeline para clonar el repositorio, si clonarlo desde cero en cualquier ejecución o usar uno que ya tenga descargado
+Packages and registry
+Monitor
+Analytics
+Usage Quotas
+
+
+#Seguridad 
+
+  #Application security
+  https://docs.gitlab.com/ee/user/application_security/secure_your_application.html
+
+   NOTA: Gitlab incluye las vulnerabilidades de su app en el merget request, es posible examinar estas mismas en el panel de control
+   
+    - Herramientas de pruebas en cada etapa:  
+    
+        Commit
+            SAST
+            Secret Detection
+                IaC Scanning
+                Dependency Scanning
+                Coverage-guided Fuzz Testing
+        Build
+            Container Scanning
+        Test
+            API Security
+            DAST
+        Deploy
+            Operational Container Scanning
+            
+    - Commit/SAST: Hace referencia al analisis del codigo (dependencias, inyecciones, fallos de autenticación, antipatrones, buffer, vulnerabilidades), se utiliza SonarQube y SonarCloud
+    - Commit/Secret Detection: Utiliza los SAST para analizar si se encuentra algun dato sensible (token, claves, secretos etc) en el codigo
+    
+    NOTA: Existen otros tipos de analisis del codigo como a nivel de composición de sotfware(SCA) para la identificar vulnerabilidades en dependencias
+          para examinar vulnerabilidades en la ejecución (DAST), o una combinación de SAST + DAST (IAST) para una examinacino mas completan
+          
+    - Commit/IaC Scanning: Es una examinación de archivos que difinen la infraestructura por ejemplo como Terraform, kubernetes, Docker, Ansible
+                           la herramienta  que analiza esto se llama KICS (Keep It Cloud Secure), Terrafarm o SonarSource. El Scanning examina (Seguridad, definición de la infraestructura
+                           exposición de secretos, aprovisionamiento innecesario en cloud, uso expuesto de algun endpoint, uso de un rool privilegiado con riesgo a una sobre ejecución fuera de su responsabilidad)
+    
+    - Commit/Depency Scanning: Analisis de seguridad en cuestiones de dependencias del codigo (SCA)
+    - Commit/Converage-guided Fuzz Testing: Es un examinación que infiere datos a la aplicación y hace un trace completo del flujo de la aplicación, durante ese trace verifica temas se vulnerabilidades
+                                            Sensibilidad de datos, desbordamiento de bufer, Inyecciones SQL, pruebas de estress etc
+                                            
+    - Build/Scanner Container: Verifica las dependencias de un container, verifica las vulnerabilidades del mismo, y de la imagen con Trivy generando un informe de vulnerabilidades
+                                se puede especificar cuales son permitidas y cuales no en el archivo vulnerability-allowlist.yml
+    - Test/DAST API Analyzer: Pruebas se seguridad para las apis
+    - Test/DAST: Examinación dinamica de una aplicación
+    
+    - Deploy/Operational Container Scanning: Se utiliza principalmente para examinar el container en ejecución despues de el despliegue, es como una especie de verificación pos Despliegue
+                                             utiliza Tryvi y OCS para en Scanning.
+
+
+
+
+  #Pipeline Security
+https://docs.gitlab.com/ee/ci/pipelines/pipeline_security.html
+
+    
+

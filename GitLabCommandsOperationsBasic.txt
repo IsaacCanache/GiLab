@@ -25,10 +25,47 @@ git add archivo / git add .
 
 #Verificar las ramas disponibles
 git branch -r
+---------------------------------------------
+        REGRESAR CAMBIOS
+---------------------------------------------
 
-#regresar un commit
-git reset --soft HEAD~1
+//REGRESAR  MODIFICANDO HISTORIAL LOCAL
+#git reset --hard <commit>
 
+//NO CAMBIANDO EL HISTORIAL
+#git revert <commit>
+
+//REGRESAR MODIFICANDO HISTORIAL REMOTO
+#git push --force
+
+NO CAMBIANDO EL HISTORIAL
+#git revert <commit>
+---------------------------------------------
+        CREAR MERGE REQUEST UNA VEZ EL PIPELINE ESTE SUCCESFULLY
+---------------------------------------------
+        
+//crear merget request
+#git push -o merge_request.create
+
+//configurar merge_request
+#git push -o merge_request.merge_when_pipeline_succeeds 
+
+---------------------------------------------
+        GUARDAR CAMBIOS EN STOP
+---------------------------------------------
+//Esto se usa para trabajar guardar cambios en una rama pero sin aplicar un cambio, simplemente guardar en un directorio limpio para trabajar
+posteriormente en el 
+
+//Guardar cambios, puedes cambiar de rama o hacer otra operacion y esos cambios seguiran en standbey
+#git stash
+
+//Recuperar de nuevo los cambios en lo que se ha estado trabajando
+#git stash apply
+
+//Tambien se puede eliminar los cambios hechos 
+#git stash pop
+---------------------------------------------
+---------------------------------------------
 
 #Traer todas las ramas sin fusionarlas
 git fetch

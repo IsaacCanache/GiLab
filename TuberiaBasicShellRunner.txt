@@ -21,7 +21,7 @@ Tuberia Basica - CI/CD - GITLAB
 		.- sudo loginctl enable-linger gitlab-runner
 		.- sudo gitlab-runner start gitlab-runner status
 		.- sudo gitlab-runner register  --url https://gitlab.com  --token glrt-KCjV6bwpZyhLs627-3KR
-		.- Como utilizamos podman, introduzca "custom" , y un nombre para el runner
+		.- Como utilizamos shell, introduzca "shell" , y un nombre para el runner
 		
 		.- mkdir artefacts mkdir -p /home/root/gitlab-runner-logs
 		.- Edite archivo en la ruta nano /etc/gitlab-runner/config.toml

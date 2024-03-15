@@ -1,0 +1,75 @@
+AWS Investing 
+
+- AWS Cognito 
+	// Es un servicio de adminitraccion de accesos e identidades, admitiendo el registro de usuarios mediante un user/password asignandole
+	un rol que permita acceder a un recurso de la aplicación, maneja varios tipos de integración a patir de eventos que son disparados
+	desde los punto de acceso o login, hacia servicios como Lambda o S3.
+	
+	// El flujo de autenticación: El usuario se registra (user/password), se le asigna un rol (write/read/update etc), se le otorga un token
+	(OAuth 2.0), con ese token solicitará acceso a los recursos en cada solicitud, AWS Cognito Autentica la solicitud con el token y permite el
+	 acceso validando el token
+	 
+	// Integración con gitlab: Normalmente se integraría un step donde un programa python donde se gestiona todo lo relacionado al 
+	user pool (gestion de usuarios, informacion, metadata), y el identity pool (concede permisos, roles etc) para que interactue con 
+	los recursos mediante la validación de tokens
+	
+- AWS Secret Manager
+	// AWS Secret Manager almacena claves, tokens etc, y gestiona el acceso a partir de los roles de IAM para su posterior uso
+	
+	// Normalmente la invocación de este servicio involucra la autenticacion con un usuario con los roles de acceso adecuados,
+	y mediante priinciapalmente la instrucción aws secretsmanager get-secret-value
+	
+	// Para el aprovisionamiento y almacenamiento de secretos se utiliza terraform desde gitlab
+	
+	archivo.tf
+	
+resource "aws_secretsmanager_secret" "example" {
+  name        = "example_secret"
+  description = "Example secret for GitLab CI/CD pipeline"
+}
+
+resource "aws_secretsmanager_secret_version" "example" {
+  secret_id     = aws_secretsmanager_secret.example.id
+  secret_string = jsonencode({ DB_USERNAME = "user", DB_PASSWORD = "pass" })
+}
+
+	archivo.gitlab-ci.yml
+
+stages:
+  - provision
+
+provision_secrets_manager:
+  stage: provision
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+  only:
+    - master
+
+
+- AWRouter53
+	//Se utiliza para aplicar los DNS mas amigables, se integra con otros recursos de AWS, posteriormente la integración con GITLAB principalmente
+	recae en llamadas para asignar estos DNS a las aplicaciones WEB
+	
+- ECS
+Archivo config:/etc/ecs/ecs.config
+Credenciales: Credenciales AWS
+
+- Lambda
+
+
+deploy_lambda:
+  stage: deploy
+  script:
+    - aws lambda update-function-code --function-name my-function --zip-file fileb://my-function.zip --region $AWS_DEFAULT_REGION
+  only:
+    - master
+
+- API Gateway //Se encarga de la exposición de recursos, tambien maneja la autenticacion con IAM, protocolos HTTP/HTTPS RESTF, monitoreo
+			de traza AWS TRACE-X, integracion con servicios AWS, manipulacion mediante SDK etc
+			  //un caso de uso relacionado con la integración con gitlab es que a partir de terraform puedes crear funciones lambda para
+			  posteriormente adjuntarle un apigateway desde el mismo aprovisionamiento desplegando recursos que son expuestos mediante
+			  este medio
+
+

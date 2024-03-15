@@ -1,0 +1,314 @@
+Despliegue en Kubernetes - Practica (efimera)
+
+#Desintalar podman
+
+podman stop -a
+podman rm -f $(podman ps -aq)
+podman rmi -f $(podman images -q)
+podman volume prune -f
+sudo dnf remove podman
+podman --version
+
+#Instalar nano
+
+sudo yum install nano -y
+
+#Instalar docker
+
+sudo yum remove docker -y \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine \
+                  podman \
+                  runc
+
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+sudo yum install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl start docker
+sudo docker run hello-world
+docker -v
+
+chmod 777 /run/docker.sock
+
+#Instalar maven
+yum install maven -y
+
+#Instalar KS3 Fast
+
+curl -sfL https://get.k3s.io | sh -
+
+//verificar
+kubectl version --client
+
+//pod de prueba
+kubectl run helloworl --image=hello-world --restart=Never
+
+chmod 777 /etc/rancher/k3s/k3s.yaml
+
+#Crear runner
+
+Crear/Configurar Runner Shell
+
+	*CREAR
+		.- Entrar en proyecto, configuraciones, Runners
+		.- (Create new runner)
+		.- Configurarlo segun sus necesidades
+		.- Extraer datos importantes del runner como la URL y el TOKEN
+	
+	*CONFIGURAR EN MAQUINA
+
+		curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh" | sudo bash
+		sudo dnf -y install gitlab-runner
+		sudo loginctl enable-linger gitlab-runner
+        sudo gitlab-runner start gitlab-runner status
+        sudo gitlab-runner register  --url https://gitlab.com  --token glrt-KCjV6bwpZyhLs627-3KR
+		.- Como utilizamos shell, introduzca "shell" , y un nombre para el runner
+		
+		.- mkdir artefacts mkdir -p /home/root/gitlab-runner-logs
+		.- Edite archivo en la ruta nano /etc/gitlab-runner/config.toml
+		
+concurrent =  1
+check_interval =  0
+shutdown_timeout =  0
+
+[session_server]
+  session_timeout =  1800
+
+[[runners]]
+  name = "runnertesting"
+  url = "https://gitlab.com"
+  id =  32676657
+  token = "glrt-KCjV6bwpZyhLs627-3KR"
+  token_obtained_at =  2024-02-15T12:56:44Z
+  token_expires_at =  0001-01-01T00:00:00Z
+  executor = "shell" # Cambiado a 'shell'
+  environment = ["FF_NETWORK_PER_BUILD=1"]
+  log_file = "/home/root/gitlab-runner-logs/gitlab-runner.log" # Añadido log_file
+  [runners.cache]
+    Type = "local"
+    Path = "/root/artefacts"
+    Shared = false
+
+
+		.- Ejecute : $ sudo gitlab-runner restart
+		.- Verificar si runner esta corriendo: gitlab-runner status
+        
+#Crear proyecto springbooot
+    
+    - Crear nuevo proyecto en gitlab a partir de una plantilla de springboot
+    - Hacer modificaciones relevantes bajo esa estructura base
+    - POM.XML
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.example</groupId>
+	<artifactId>demo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>demo</name>
+	<description>Demo project for Spring Boot</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.5.5</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M3</version>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>
+
+CLASE.java
+
+package com.example.demo;
+
+import org.springframework.boot.*;
+import org.springframework.boot.autoconfigure.*;
+import org.springframework.web.bind.annotation.*;
+
+@SpringBootApplication
+@RestController
+public class DemoApplication {
+
+
+//test
+	@GetMapping("/")
+	public String home() {
+		return "Spring is here!";
+	}
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+}
+
+
+#Dockerfile
+
+# Usar una imagen base de Java
+FROM openjdk:11-jre-slim
+
+# Copiar el archivo compilado o el archivo JAR en el contenedor
+COPY target/demo-0.0.1-SNAPSHOT.jar /usr/app/demo.jar
+
+# Establecer el directorio de trabajo
+WORKDIR /usr/app
+
+# Exponer en el puerto 8080
+EXPOSE 8080
+
+# Ejecutar la aplicación
+ENTRYPOINT ["java", "-jar", "demo.jar"]
+
+
+(OPCIONAL)
+#Crear secret
+
+kubectl create secret generic docker-registry-secret \
+--from-file=.dockerconfigjson=~/.docker/config.json \
+--type=kubernetes.io/dockerconfigjson
+
+
+/home/gitlab-runner/.docker/config.json
+
+#Crear deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: my-app-deployment
+spec:
+ replicas: 2
+ selector:
+    matchLabels:
+      app: my-app
+ template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: isaacli7/storageimage:latest
+        ports:
+        - containerPort: 8080
+
+--------------
+//datos de repositorio de imagenes en  dockerhub
+docker login --username isaacli7 --password 31enero3030
+
+    
+
+#Se necesitan permisos de usuarios para el user runner/gitlab en el runner para ejecutar comandos
+# - yum update -y 
+# - yum install -y maven docker
+
+Desplegar pod> docker run -p 8080:8080 hola-mundo-app
+
+
+-------------
+#Crear archivo .gitlab-ci.yaml
+
+image: maven:3.8.1-openjdk-11
+
+stages:
+ - build
+ - containerize
+ - deploy
+
+build:
+ stage: build
+ tags:
+    - tags
+ script:
+    - mvn clean package
+ artifacts:
+    paths:
+      - target/*.jar
+      - ls target/
+
+containerize:
+ stage: containerize
+ tags:
+    - tags
+ script:
+    - docker build -t my-app .
+    - docker login --username isaacli7 --password 31enero3030
+    - docker tag my-app isaacli7/storageimage:latest
+    - docker push isaacli7/storageimage:latest
+    - docker image ls
+
+deploy:
+ stage: deploy
+ tags:
+    - tags
+ script:
+   - kubectl apply -f deployment.yaml
+ environment:
+    name: production
+    
+-------------------
+
+#Probar aplicación
+
+    - Crear service: Crear service con el fin de exponer localmente el puerto para su visibilidad y consumo
+
+apiVersion: v1
+kind: Service
+metadata:
+ name: my-app-service
+spec:
+ selector:
+    app: my-app
+ ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+ type: ClusterIP
+    
+    - Crear el serice: kubectl apply -f my-app-service.yml
+    - Redirigir puerto: kubectl port-forward svc/my-app-service 8080:8080
+    - Prueba local: curl localhost:8080
